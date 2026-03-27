@@ -2,7 +2,7 @@ module Fuzzy.Sets.Cardinality(
     sigmaCount,
     thresholdSigmaCount,
     normalizedSigmaCount,
-    sigmaCountWithModifier,
+    sigmaCountMod,
     -- * Modifier functions
     modifierFunction,
     sigmoidModifier,
@@ -41,11 +41,11 @@ For a fuzzy set A, |A| = Σ c(A(u)) for all u ∈ U
 
 >>> let set = fromPairs [(1, 0.2), (2, 0.7), (3, 0.5)] :: LSet Int UILukasiewicz
 >>> let modifier = sigmoidModifier 2.0 0.5
->>> sigmaCountWithModifier modifier set
+>>> sigmaCountMod modifier set
 1.4
 -}
-sigmaCountWithModifier :: (FuzzySet set a l) => (l -> l) -> set -> Double
-sigmaCountWithModifier c set = sum [realToFrac $ (c . f) x | x <- universe set]
+sigmaCountMod :: (FuzzySet set a l) => (l -> l) -> set -> Double
+sigmaCountMod c set = sum [realToFrac $ (c . f) x | x <- universe set]
     where f = member set
 
 
