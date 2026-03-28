@@ -78,3 +78,4 @@ test-suite test
         Fuzzy.Sets.PropertiesTest
         Fuzzy.Relations.LRelationTest
         Fuzzy.Relations.PropertiesTest
+        Fuzzy.Control.DefuzzificationTest
