@@ -33,6 +33,7 @@ library
         Fuzzy.Sets.MembershipFunctions
         Fuzzy.Sets.Cardinality
         Fuzzy.Sets.Properties
+        Fuzzy.Control.Defuzzification
         Fuzzy.Relations.LRelation
         Fuzzy.Relations.MembershipFunctions
         Fuzzy.Relations.RelationComposition

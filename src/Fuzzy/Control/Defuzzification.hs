@@ -1,4 +1,4 @@
-module Fuzzy.Control.Defuzzyfication where
+module Fuzzy.Control.Defuzzification where
 
 import Fuzzy.Sets.LSet (LSet, toList)
 import Fuzzy.Sets.Cardinality
