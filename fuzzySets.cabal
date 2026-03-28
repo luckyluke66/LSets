@@ -1,6 +1,6 @@
 cabal-version:      2.4
 name:               fuzzySets
-version:            1.0.1
+version:            1.0.2
 category:           Math
 license:            BSD-3-Clause
 author:             Lukas Balog <lukasbalog66@gmail.com>
@@ -17,7 +17,7 @@ description:
 
     This package provide functions for working with fuzzy sets and fuzzy relations.
 
-extra-source-files: CHANGELOG.md
+extra-doc-files: CHANGELOG.md
 
 source-repository head
     type:           git
