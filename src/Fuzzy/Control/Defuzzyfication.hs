@@ -39,9 +39,9 @@ centerOfMaxima set = (sup + inf) / 2
 -- Returns 0 for empty universes.
 meanOfMaximaMod :: ResiduatedLattice l => (l -> l) -> LSet Double l -> Double
 meanOfMaximaMod c set = if sizeUniverse == 0 then 0 else card / sizeUniverse
-     where 
+    where 
         card = sigmaCountMod c set
-        sizeUniverse = fromIntegral $ length (universe set)
+        sizeUniverse = fromIntegral $ universeCardinality set
 
 -- | Return the universe element with maximal membership degree.
 --
@@ -51,5 +51,5 @@ maxMembership :: ResiduatedLattice l => LSet Double l -> Double
 maxMembership set
     | null pairs = 0
     | otherwise  = fst $ maximumBy (comparing snd) pairs
-  where
-    pairs = toList set
+    where
+        pairs = toList set
