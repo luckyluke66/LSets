@@ -15,7 +15,8 @@ fuzzyCardinalityTests = testGroup "Fuzzy Cardinality Tests" [
     testCase "bracket identifies max alpha for given k" testBracket,
     testCase "fgCount maps counts to maximal alpha" testFgCount,
     testCase "flCount maps counts to minimal alpha" testFlCount,
-    testCase "feCount maps counts to intersection" testFeCount
+    testCase "feCount maps counts to intersection" testFeCount,
+    testCase "ralescuF returns fuzzy count" testRalescuF
     ]
 
 whereSet :: LSet String UILukasiewicz
@@ -62,4 +63,16 @@ testFeCount = do
     mapM_ (\(e,a) -> do
             assertEqual "feCount key" (fst e) (fst a)
             assertApproxEqual "feCount value" (snd a) (snd e)
+        ) pairs
+
+
+testRalescuF :: Assertion
+testRalescuF = do
+    let c = ralescuF whereSet :: LSet Int UILukasiewicz
+        expected = [(0,0.9),(1,0.1),(2,0.1),(3,0.2),(4,0.2),(5,0.4),(6,0.3),(7,0.7)]
+        actual = [(k, fromLukasiewiczUnitInterval v) | (k,v) <- toList c]
+        pairs = zip expected actual
+    mapM_ (\(e,a) -> do
+            assertEqual "ralescuF key" (fst e) (fst a)
+            assertApproxEqual "ralescuF value" (snd a) (snd e)
         ) pairs

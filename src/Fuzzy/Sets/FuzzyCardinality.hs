@@ -1,29 +1,44 @@
-module Fuzzy.Sets.FuzzyCardinality where
+module Fuzzy.Sets.FuzzyCardinality(
+    fgCount, 
+    feCount,
+    flCount,
+    ralescuF,
+    bracket
+) where
 
 import FuzzySet
 import Lattices.ResiduatedLattice
+import Fuzzy.Sets.LSet (toList)
+import Data.List (sort)
 
 
 bracket :: (FuzzySet set a l) => Int -> set -> l
 bracket k set 
     | null alphas = 0 
-    | otherwise = maximum alphas  
+    | otherwise   = maximum alphas
     where 
-        alphas = [alpha | alpha <- truthDegrees set, length (alphaCut alpha set) >= k ]
+        alphas = [alpha | alpha <- truthDegrees set, length (alphaCut alpha set) >= k]
 
 
 fgCount :: (FuzzySet set a l, FuzzySet countSet Int l) => set -> countSet
 fgCount set = mkFuzzySet f universeCounts 
     where
         universeCounts = [0 .. universeCardinality set]
-        f k = bracket k set
+        f k            = if k == 0 then 1 else bracket k set
 
 
 flCount :: (FuzzySet set a l, FuzzySet countSet Int l) => set -> countSet
 flCount set = mkFuzzySet f universeCounts
     where
         universeCounts = [0 .. universeCardinality set]
-        f k = negation $ bracket (k + 1) set
+        f k            = if k == 0 then 0 else negation $ bracket (k + 1) set
 
 feCount :: (FuzzySet set a l, FuzzySet countSet Int l) => set -> countSet
 feCount set  = intersection (flCount set) (fgCount set)
+
+ralescuF :: (FuzzySet set a l, FuzzySet countSet Int l) => set -> countSet
+ralescuF set = mkFuzzySet f universeCounts
+    where 
+        universeCounts = [0 .. universeCardinality set]
+        f k  = (degs !! k) /\ negation (degs !! k + 1)
+        degs = 1 : sort (truthDegrees set) ++ [0]
