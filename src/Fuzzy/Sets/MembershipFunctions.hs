@@ -218,13 +218,9 @@ trapezoidal a b1 b2 c x
 >>> f 2
 0.1353352832366127
 -}
-gaussian :: ResiduatedLattice l => Double -> Double -> Double -> (Double -> l)
-gaussian a b c x =
-    let e     = exp 1
-        numer = (x + b) ** 2
-        denom = 2 * (c ** 2)
-        pow   = -(numer / denom)
-    in mkLattice $ a * e**pow
+gaussian :: ResiduatedLattice l => Double -> Double -> Double -> Double -> l 
+gaussian a b c x = 
+    mkLattice $ a * exp ( - ((x - b) ^ 2) / (2 * c ^ 2) )
 
 
 {-| Exponential function eˣ
