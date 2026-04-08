@@ -8,11 +8,14 @@ module Fuzzy.Sets.Cardinality(
     sigmoidModifier,
     identityModifier,
     subDiagonalModifier,
-    alphaCutModifier
-) where 
+    alphaCutModifier,
+    ralescuS
+) where
 
 import Lattices.ResiduatedLattice
 import Fuzzy.Sets.LSet
+import FuzzySet
+import Data.List
 
 
 {- | Most commonly used way to tell the size of a fuzzy set.
@@ -31,7 +34,7 @@ For fuzzy set a |A| = Σ A(u) for all u ∈ U
 -}
 sigmaCount :: (FuzzySet set a l) => set -> Double
 sigmaCount set = sum [realToFrac (f x) | x <- universe set]
-    where f = member set 
+    where f = member set
 
 
 {- | Similar to 'sigmaCount', but applies a modifier function `c` to each membership value before summing.
@@ -62,10 +65,10 @@ Only membership values greater or equal than the threshold are summed.
 0.0
 -}
 thresholdSigmaCount :: (FuzzySet set a l) => l -> set -> Double
-thresholdSigmaCount threshold set = 
+thresholdSigmaCount threshold set =
     sum [realToFrac (f x) | x <- universe set, f x >= threshold]
     where f = member set
-    
+
 
 {- | Normalized sigma count is like the standard sigma count, but the value is normalized to be in the interval [0,1].
 
@@ -97,7 +100,7 @@ The parameters `p`, `r`, and `threshold` control the behavior of the modifier.
 -}
 modifierFunction :: (ResiduatedLattice l) => Double -> Double -> Double -> (l -> l)
 modifierFunction p r threshold a
-    | realToFrac a < threshold = mkLattice $ threshold ** (1 - p) * (realToFrac a ** p)
+    | realToFrac a < threshold  = mkLattice $ threshold ** (1 - p) * (realToFrac a ** p)
     | realToFrac a >= threshold = mkLattice $ 1 - (1 - threshold) ** (1 - r) * (1 - realToFrac a) ** r
 
 
@@ -159,11 +162,19 @@ threshold to 'bot' and values above the threshold to 'top'.
 1.0
 -}
 alphaCutModifier :: (ResiduatedLattice l) => Double -> (l -> l)
-alphaCutModifier threshold a 
+alphaCutModifier threshold a
     | realToFrac a <= threshold = bot
-    | realToFrac a > threshold = top
+    | realToFrac a > threshold  = top
 
 {- $modifier functions 
 Modifier functions give us a way to shift sigma count in case where needed. 
 Common solution for problem of accumulation of large number of small values. 
 -}
+
+
+ralescuS :: (FuzzySet set a l) => set -> Int
+ralescuS set
+    | 0.5 `elem` degs = length [deg | deg <- degs, deg > 0.5] + 1
+    | otherwise       = length [deg | deg <- degs, deg > 0.5]
+    where
+        degs = 1 : sort (truthDegrees set) ++ [0]

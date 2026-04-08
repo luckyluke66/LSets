@@ -5,7 +5,8 @@ import Lattices.ResiduatedLattice
 import Lattices.UnitInterval
 import UnitIntervalStructuresTest
 import Fuzzy.Sets.LSetTest 
-import Fuzzy.Sets.MembershipFunctionsTest
+import Fuzzy.Sets.FuzzyCardinalityTest
+import Fuzzy.Sets.CardinalityTest
 import Fuzzy.Sets.PropertiesTest 
 import Fuzzy.Sets.MembershipFunctionsTest
 import Fuzzy.Relations.LRelationTest
@@ -19,9 +20,11 @@ main = defaultMain $ testGroup "All Tests" [
     lukasiewiczTests,
     productTests,
     lsetTests,
+    fuzzyCardinalityTests,
     membershipFunctionsTests,
     propertiesTests,
     lrelationTests,
     relPropertiesTests,
-    defuzzificationTests
+    defuzzificationTests,
+    cardinalityTests
     ]
