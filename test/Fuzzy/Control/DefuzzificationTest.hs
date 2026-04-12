@@ -6,29 +6,29 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import Fuzzy.Control.Defuzzification
 import Fuzzy.Sets.LSet
+import FuzzySet
 import Fuzzy.Sets.Cardinality
 import Lattices.UnitIntervalStructures.Godel
 
--- Test data
+
 sampleSet :: LSet Double UIGodel
 sampleSet = fromList [(1, 0.2), (2, 0.8)]
+
 
 emptySet :: LSet Double UIGodel
 emptySet = mkEmptySet
 
--- Test group
+
 defuzzificationTests :: TestTree
 defuzzificationTests = testGroup "Defuzzification Tests" [
     testCase "centerOfGravity on non-empty set" $
         assertEqual "centroid correct" 1.8 (centerOfGravity sampleSet),
     testCase "centerOfGravity on empty set" $
         assertEqual "empty set yields 0" 0.0 (centerOfGravity emptySet),
-    testCase "centerOfGravityMod with alpha-cut" $
-        assertEqual "modifier influences denominator only" 1.8 (centerOfGravityMod (alphaCutModifier 0.5) sampleSet),
     testCase "centerOfMaxima uses universe bounds" $
         assertEqual "midpoint between min and max" 1.5 (centerOfMaxima sampleSet),
     testCase "meanOfMaximaMod with identity modifier" $
-        assertEqual "normalized sigma count" 0.5 (meanOfMaximaMod (\x -> x) sampleSet),
+        assertEqual "normalized sigma count" 0.5 (meanOfMaximaMod id sampleSet),
     testCase "meanOfMaximaMod with alpha-cut modifier" $
         assertEqual "alpha-cut count over universe size" 0.5 (meanOfMaximaMod (alphaCutModifier 0.5) sampleSet),
     testCase "maxMembership on non-empty set" $

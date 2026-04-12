@@ -1,5 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
+-- | Product (Goguen) operations on the unit interval.
 module Lattices.UnitIntervalStructures.Product(
     UIProduct(UIProduct),
     BoundedLattice(..),
@@ -10,7 +11,8 @@ module Lattices.UnitIntervalStructures.Product(
 import Lattices.ResiduatedLattice
 import Lattices.UnitInterval
 
-newtype UIProduct = UIProduct UnitInterval 
+-- | Unit-interval truth values equipped with product (Goguen) operations.
+newtype UIProduct = UIProduct UnitInterval
     deriving (Eq, Ord, Num, Real, RealFrac, Fractional)
 
 instance BoundedLattice UIProduct where
@@ -20,18 +22,20 @@ instance BoundedLattice UIProduct where
     top = UIProduct top
     mkLattice = mkProductUnitInterval
 
--- | Product (Goguen) structure of truth values
+-- | Product (Goguen) residuated-lattice structure.
 instance ResiduatedLattice UIProduct where
     tnorm x y = x * y
-    a --> b 
-        | a <= b = top 
+    a --> b
+        | a <= b = top
         | otherwise = b / a
 
-instance Show UIProduct where 
+instance Show UIProduct where
     show (UIProduct x) = show x
 
+-- | Smart constructor for product truth values.
 mkProductUnitInterval :: Double -> UIProduct
 mkProductUnitInterval x = UIProduct $ mkUnitInterval x
 
+-- | Extract the underlying 'Double' value.
 fromProductUnitInterval :: UIProduct -> Double
 fromProductUnitInterval (UIProduct (UnitInterval x)) = x
