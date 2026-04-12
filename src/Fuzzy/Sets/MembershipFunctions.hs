@@ -30,8 +30,8 @@ import Lattices.ResiduatedLattice
 >>> f 100
 0.5
 -}
-constant :: ResiduatedLattice l => Double -> (Double -> l)
-constant a _ = mkLattice a
+constant :: ResiduatedLattice l => l -> (a -> l)
+constant x _ = x
 
 
 {-| Standart textbook linear function where \[f(x) = ax + b\]

@@ -1,6 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
 
+-- | Godel operations on the unit interval.
 module Lattices.UnitIntervalStructures.Godel(
     UIGodel(UIGodel),
     BoundedLattice(..),
@@ -11,7 +12,8 @@ module Lattices.UnitIntervalStructures.Godel(
 import Lattices.ResiduatedLattice
 import Lattices.UnitInterval
 
-newtype UIGodel = UIGodel UnitInterval 
+-- | Unit-interval truth values equipped with Godel operations.
+newtype UIGodel = UIGodel UnitInterval
     deriving (Eq, Ord, Num, Real, RealFrac, Fractional)
 
 instance BoundedLattice UIGodel where
@@ -22,7 +24,7 @@ instance BoundedLattice UIGodel where
     top = UIGodel top
     mkLattice = mkGodelUnitInterval
 
--- | Gödel structure of truth values
+-- | Godel residuated-lattice structure.
 instance ResiduatedLattice UIGodel where
     tnorm x y = x /\ y
     (-->)  = godelResiduum
@@ -30,12 +32,15 @@ instance ResiduatedLattice UIGodel where
 instance Show UIGodel where
     show (UIGodel x) = show x
 
+-- | Smart constructor for Godel truth values.
 mkGodelUnitInterval :: Double -> UIGodel
 mkGodelUnitInterval x = UIGodel $ mkUnitInterval x
 
+-- | Extract the underlying 'Double' value.
 fromGodelUnitInterval :: UIGodel -> Double
 fromGodelUnitInterval (UIGodel (UnitInterval x)) = x
 
+-- | Residuum induced by the Godel t-norm.
 godelResiduum :: UIGodel -> UIGodel -> UIGodel
 godelResiduum x y
     | x <= y = top

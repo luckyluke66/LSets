@@ -1,5 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
+-- | Lukasiewicz operations on the unit interval.
 module Lattices.UnitIntervalStructures.Lukasiewicz(
     UILukasiewicz(UILukasiewicz),
     BoundedLattice(..),
@@ -10,7 +11,8 @@ module Lattices.UnitIntervalStructures.Lukasiewicz(
 import Lattices.ResiduatedLattice
 import Lattices.UnitInterval
 
-newtype UILukasiewicz = UILukasiewicz UnitInterval 
+-- | Unit-interval truth values equipped with Lukasiewicz operations.
+newtype UILukasiewicz = UILukasiewicz UnitInterval
     deriving (Eq, Ord, Num, Real, RealFrac, Fractional)
 
 instance BoundedLattice UILukasiewicz where
@@ -20,16 +22,18 @@ instance BoundedLattice UILukasiewicz where
     top = UILukasiewicz top
     mkLattice = mkLukasiewiczUnitInterval
 
--- | Łukasiewicz structure of truth values
+-- | Lukasiewicz residuated-lattice structure.
 instance ResiduatedLattice UILukasiewicz where
     tnorm a b = (a + b - top) \/ bot
     a --> b = (top - a + b) /\ top
 
-instance Show UILukasiewicz where 
+instance Show UILukasiewicz where
     show (UILukasiewicz x) = show x
 
+-- | Smart constructor for Lukasiewicz truth values.
 mkLukasiewiczUnitInterval :: Double -> UILukasiewicz
 mkLukasiewiczUnitInterval x = UILukasiewicz $ mkUnitInterval x
 
+-- | Extract the underlying 'Double' value.
 fromLukasiewiczUnitInterval :: UILukasiewicz -> Double
 fromLukasiewiczUnitInterval (UILukasiewicz (UnitInterval x)) = x

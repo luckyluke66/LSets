@@ -1,5 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
+-- | The closed real unit interval used as the base carrier for truth values.
 module Lattices.UnitInterval(
     UnitInterval(..),
     mkUnitInterval
@@ -7,8 +8,8 @@ module Lattices.UnitInterval(
 
 import Lattices.ResiduatedLattice
 
--- | unit interval on real numbers [0,1]
-newtype UnitInterval = UnitInterval Double 
+-- | Real numbers restricted to the closed interval @[0, 1]@.
+newtype UnitInterval = UnitInterval Double
     deriving (Eq, Ord, Num, Real, RealFrac, Fractional)
 
 instance BoundedLattice UnitInterval where
@@ -21,6 +22,6 @@ instance BoundedLattice UnitInterval where
 instance Show UnitInterval where
     show (UnitInterval x) = show x
 
--- | Unit interval constructor. Ensures values are in bounds
+-- | Smart constructor that clamps values into the interval @[0, 1]@.
 mkUnitInterval :: Double -> UnitInterval
 mkUnitInterval x = UnitInterval $ max 0 $ min x 1

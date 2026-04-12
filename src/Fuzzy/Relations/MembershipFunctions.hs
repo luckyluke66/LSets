@@ -1,14 +1,13 @@
-{- | This module contains parametrized membership function for fuzzy relations
-    use currying to construct the functions 
-    arguments a b c ... are parameters for constructing specific functions 
-    (x, y) is pair for which membership is evaluated
--}
+-- | Simple membership functions for building fuzzy relations.
 module Fuzzy.Relations.MembershipFunctions (
     isCloseTo
 ) where
 
 import Lattices.ResiduatedLattice
 
--- | fuzzy relation representing closeness of two numbers
+-- | Symmetric closeness relation on real numbers.
+--
+-- Values closer than distance @1@ receive linearly decreasing membership,
+-- while larger distances map to 'bot'.
 isCloseTo :: ResiduatedLattice l => (Double, Double) -> l
 isCloseTo (x, y) = mkLattice $ max 0 (1 - abs (x - y))

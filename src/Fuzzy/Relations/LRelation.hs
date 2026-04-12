@@ -3,34 +3,32 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE InstanceSigs #-}
 
+-- | Concrete fuzzy relations represented as fuzzy sets over pairs.
 module Fuzzy.Relations.LRelation (
     LRelation(LRelation),
     FuzzySet(..),
     fromList,
     fromFuzzySet,
     fromFunction,
-    mkEmptyRel,
-    mkSingletonRel,
-    mkUniversalRel, 
     toList
 ) where
 
 import Lattices.ResiduatedLattice
-import Data.List
 import Data.Maybe
 import FuzzySet
+import Data.List(foldl')
 import Utils.Utils (universeToList, listToUniverse)
 
-
-{- | Binary L relation is a fuzzy set on a universe of pairs -}
+-- | A binary fuzzy relation over a universe of ordered pairs.
+--
+-- The constructor stores both the membership function and the explicit pair
+-- universe on which the relation is evaluated.
 data (ResiduatedLattice l, Eq a) => LRelation a l = LRelation
-    { membership :: (a, a) -> l
+    { -- | Membership function of the relation.
+      membership :: (a, a) -> l
+    -- | Explicit universe of ordered pairs.
     , universe :: ![(a, a)]
     }
-    -- normally fuzzy relation is function R: X x Y -> L va 
-    -- but we can create any type U =  X | Y
-    -- this way we can represent the relation with one universal set
-    -- so we have R: U x U -> L
 
 instance (Eq a, Show a, Show l, ResiduatedLattice l) => Show (LRelation a l) where
     show :: LRelation a l -> String
@@ -49,20 +47,23 @@ instance (Eq a, ResiduatedLattice l) => FuzzySet (LRelation a l) (a, a) l where
     mkFuzzySet = LRelation
 
 
-{- | Construct a fuzzy relation from a fuzzy set
+{- | Construct a fuzzy relation from a fuzzy set.
 
 ==== __Examples__
 
->>> let fuzzySet = fromPairs [((1, 2), 0.5), ((2, 3), 0.8)] :: LSet (Int, Int) UILukasiewicz
+>>> let fuzzySet = fromList [((1, 2), 0.5), ((2, 3), 0.8)] :: LSet (Int, Int) UILukasiewicz
 >>> let rel = fromFuzzySet fuzzySet
->>> rel
-"LRelation {Memberships: [((1,2),0.5),((2,3),0.8)]}"
+>>> toList rel
+[((1,2),0.5),((2,3),0.8)]
 -}
 fromFuzzySet :: (FuzzySet f (a, a) l, ResiduatedLattice l, Eq a) => f -> LRelation a l
 fromFuzzySet fuzzySet = LRelation (member fuzzySet) (FuzzySet.universe fuzzySet)
 
 
-{- | Construct a fuzzy relation from a list of pairs-}
+-- | Construct a relation from explicit @((x, y), degree)@ pairs.
+--
+-- Missing pairs default to 'bot'. The carrier set is inferred from all values
+-- appearing in the supplied pairs.
 fromList :: (ResiduatedLattice l, Eq a) => [((a, a), l)] -> LRelation a l
 fromList lst = LRelation member (listToUniverse u)
     where
@@ -70,56 +71,45 @@ fromList lst = LRelation member (listToUniverse u)
         u = universeToList (map fst lst)
 
 
-{- | Construct a fuzzy relation from a membership function and a universe
+{- | Construct a fuzzy relation from a membership function and a carrier set.
 
 ==== __Examples__
 
 >>> let f (x, y) = if x < y then 0.7 else 0.3
->>> let rel = fromFunction f [(1, 2), (2, 3), (3, 1)] :: LRelation Int UILukasiewicz
->>> toPairs rel
-[((1,2),0.7),((2,3),0.7),((3,1),0.3)]
+>>> let rel = fromFunction f [1, 2, 3] :: LRelation Int UILukasiewicz
+>>> toList rel
+[((1,1),0.3),((1,2),0.7),((1,3),0.7),((2,1),0.3),((2,2),0.3),((2,3),0.7),((3,1),0.3),((3,2),0.3),((3,3),0.3)]
 -}
-fromFunction :: (ResiduatedLattice l, Eq a) => ((a, a) -> l) -> [a] -> LRelation a l 
+fromFunction :: (ResiduatedLattice l, Eq a) => ((a, a) -> l) -> [a] -> LRelation a l
 fromFunction f u = LRelation f (listToUniverse u)
 
 
-{- | Construct an empty fuzzy relation
-
-==== __Examples__
-
->>> let emptyRel = mkEmptyRel :: LRelation Int UILukasiewicz
->>> toPairs emptyRel
-[]
--}
-mkEmptyRel :: (ResiduatedLattice l, Eq a) => LRelation a l
-mkEmptyRel = LRelation (const bot) []
-
-
-{- | Construct a singleton fuzzy relation
-
-==== __Examples__
-
->>> let singletonRel = mkSingletonRel [(1, 2), (2, 3)] ((1, 2), 0.8) :: LRelation Int UILukasiewicz
->>> toPairs singletonRel
-[((1, 2), 0.8),((2, 3), 0.0)]
--}
-mkSingletonRel :: (ResiduatedLattice l, Eq a) => [a] -> ((a, a), l) -> LRelation a l
-mkSingletonRel u (x, l) = LRelation f (listToUniverse u)
-    where f pair = if pair == x then l else bot
-
-
-{- | Construct a universal fuzzy relation
-
-==== __Examples__
-
->>> let universalRel = mkUniversalRel [(1, 2), (2, 3)] :: LRelation Int UILukasiewicz
->>> toPairs universalRel
-[((1, 2), 1.0),((2, 3), 1.0)]
--}
-mkUniversalRel :: (ResiduatedLattice l, Eq a) => [a] -> LRelation a l
-mkUniversalRel u = LRelation (const top) (listToUniverse u)
-
-
--- | Return relation as a list of pairs
+-- | Convert a relation into an explicit list of pair memberships.
 toList :: (ResiduatedLattice l, Eq a) => LRelation a l -> [((a, a), l)]
 toList (LRelation f u) = [(x, f x) | x <- u]
+
+
+
+-- | Convert the relation as a matrix indexed by its universe. Only possible if universe is numeric.
+toMatrix :: (ResiduatedLattice l, Show l) => LRelation Double l -> [[l]]
+toMatrix rel =
+    foldl' insert empty xs
+    where
+        xs = toList rel
+        n = length $ universeToList (map fst xs)
+        empty = replicate n (replicate n bot)
+
+        insert m ((r,c), v) =
+            let ri = round r - 1
+                ci = round c - 1
+            in take ri m
+                ++ [replace ci v (m !! ri)]
+                ++ drop (ri+1) m
+
+        replace i x row =
+            take i row ++ [x] ++ drop (i+1) row
+
+-- | Create a relation from adjacency matrix with specified list of values.
+fromMatrix :: (ResiduatedLattice l, Show l) => [[l]] -> [Double] -> LRelation Double l
+fromMatrix matrix vals =
+    fromList [((i, j), val) | (i, row) <- zip vals matrix, (j, val) <- zip vals row]

@@ -1,3 +1,4 @@
+-- | Cardinality measures and modifier functions for fuzzy sets.
 module Fuzzy.Sets.Cardinality(
     sigmaCount,
     thresholdSigmaCount,
@@ -19,12 +20,12 @@ import Data.List
 
 
 {- | Most commonly used way to tell the size of a fuzzy set.
-The sigma count is the sum of membership values of all elements in the universe set. 
-For fuzzy set a |A| = Σ A(u) for all u ∈ U
+The sigma count is the sum of membership values of all elements in the universe set.
+For fuzzy set A, |A| = sum A(u) for all u in U.
 
 ==== __Examples__
 
->>> let set = fromPairs [(1, 0.2), (2, 0.7), (3, 0.5)] :: LSet Int UILukasiewicz
+>>> let set = fromList [(1, 0.2), (2, 0.7), (3, 0.5)] :: LSet Int UILukasiewicz
 >>> sigmaCount set
 1.4
 
@@ -37,12 +38,12 @@ sigmaCount set = sum [realToFrac (f x) | x <- universe set]
     where f = member set
 
 
-{- | Similar to 'sigmaCount', but applies a modifier function `c` to each membership value before summing.
-For a fuzzy set A, |A| = Σ c(A(u)) for all u ∈ U
+{- | Similar to 'sigmaCount', but applies a modifier function @c@ to each membership value before summing.
+For a fuzzy set A, |A| = sum c(A(u)) for all u in U.
 
 ==== __Examples__
 
->>> let set = fromPairs [(1, 0.2), (2, 0.7), (3, 0.5)] :: LSet Int UILukasiewicz
+>>> let set = fromList [(1, 0.2), (2, 0.7), (3, 0.5)] :: LSet Int UILukasiewicz
 >>> let modifier = sigmoidModifier 2.0 0.5
 >>> sigmaCountMod modifier set
 1.4
@@ -53,11 +54,11 @@ sigmaCountMod c set = sum [realToFrac $ (c . f) x | x <- universe set]
 
 
 {- | Sigma count with a threshold applied.
-Only membership values greater or equal than the threshold are summed.
+Only membership values greater than or equal to the threshold are summed.
 
 ==== __Examples__
 
->>> let set = fromPairs [(1, 0.2), (2, 0.7), (3, 0.5)] :: LSet Int UILukasiewicz
+>>> let set = fromList [(1, 0.2), (2, 0.7), (3, 0.5)] :: LSet Int UILukasiewicz
 >>> thresholdSigmaCount 0.5 set
 1.2
 
@@ -70,11 +71,11 @@ thresholdSigmaCount threshold set =
     where f = member set
 
 
-{- | Normalized sigma count is like the standard sigma count, but the value is normalized to be in the interval [0,1].
+{- | Normalized sigma count is like the standard sigma count, but the value is normalized to be in the interval @[0,1]@.
 
 ==== __Examples__
 
->>> let set = fromPairs [(1, 0.2), (2, 0.7), (3, 0.5)] :: LSet Int UILukasiewicz
+>>> let set = fromList [(1, 0.2), (2, 0.7), (3, 0.5)] :: LSet Int UILukasiewicz
 >>> normalizedSigmaCount set
 0.4666666666666667
 
@@ -87,7 +88,7 @@ normalizedSigmaCount set = mkLattice $ sigmaCount set / fromIntegral (length $ u
 
 
 {- | A general modifier function that can be used to create specific modifier functions.
-The parameters `p`, `r`, and `threshold` control the behavior of the modifier.
+The parameters @p@, @r@, and @threshold@ control the behaviour of the modifier.
 
 ==== __Examples__
 
@@ -104,11 +105,11 @@ modifierFunction p r threshold a
     | realToFrac a >= threshold = mkLattice $ 1 - (1 - threshold) ** (1 - r) * (1 - realToFrac a) ** r
 
 
-{- | A sigmoid modifier function, a specific case of 'modifierFunction' where `p = r`.
+{- | A sigmoid modifier function, a specific case of 'modifierFunction' where @p = r@.
 
 ==== __Examples__
 
->>> let modifier = sigmoidModifier 2 :: UILukasiewicz -> UILukasiewicz
+>>> let modifier = sigmoidModifier 2 0.5 :: UILukasiewicz -> UILukasiewicz
 >>> modifier 0.3
 0.36
 
@@ -134,7 +135,7 @@ identityModifier :: (ResiduatedLattice l) => (l -> l)
 identityModifier = modifierFunction 1 1 1
 
 
-{- | Sub-diagonal modifier function, a specific case of 'modifierFunction' where `r = 1`.
+{- | Sub-diagonal modifier function, a specific case of 'modifierFunction' where @r = 1@.
 
 ==== __Examples__
 
@@ -149,7 +150,7 @@ subDiagonalModifier :: (ResiduatedLattice l) => Double -> (l -> l)
 subDiagonalModifier p = modifierFunction p 1 1
 
 
-{- | Alpha-cut modifier function, which sets membership values below the 
+{- | Alpha-cut modifier function, which sets membership values below the
 threshold to 'bot' and values above the threshold to 'top'.
 
 ==== __Examples__
@@ -166,12 +167,15 @@ alphaCutModifier threshold a
     | realToFrac a <= threshold = bot
     | realToFrac a > threshold  = top
 
-{- $modifier functions 
-Modifier functions give us a way to shift sigma count in case where needed. 
-Common solution for problem of accumulation of large number of small values. 
+{- $modifier functions
+Modifier functions give us a way to shift sigma count in cases where needed.
+A common use is reducing the effect of many small accumulated membership values.
 -}
 
-
+-- | Ralescu's crisp cardinality estimate derived from sorted truth degrees.
+--
+-- The result is the number of membership degrees strictly above @0.5@, with
+-- the midpoint counted in the conventional way used by Ralescu's measure.
 ralescuS :: (FuzzySet set a l) => set -> Int
 ralescuS set
     | 0.5 `elem` degs = length [deg | deg <- degs, deg > 0.5] + 1

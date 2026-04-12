@@ -1,6 +1,6 @@
 cabal-version:      2.4
 name:               fuzzySets
-version:            1.0.2
+version:            1.1.0
 category:           Math
 license:            BSD-3-Clause
 author:             Lukas Balog <lukasbalog66@gmail.com>
@@ -8,14 +8,16 @@ maintainer:         Lukas Balog <lukasbalog66@gmail.com>
 homepage:           https://github.com/luckyluke66/L-Sets
 
 synopsis:
-    Library for constructing and manipulating fuzzy sets and fuzzy relations.
+    A Haskell library for working with fuzzy sets and fuzzy relations.
 
 description:
-    In mathematics Fuzzy Set is a generalization of standart set
-    In set elements can either belong to that set or not.
-    When it comes to fuzzy sets, elements belong to a fuzzy set in a degree.
+    In classical set theory, an element either belongs to a set or it does not.
+    Fuzzy sets generalize this idea by allowing graded membership.
 
-    This package provide functions for working with fuzzy sets and fuzzy relations.
+    This package provides tools for constructing and manipulating fuzzy sets
+    and fuzzy relations.
+    If you are new to the library, the "Fuzzy.Tutorial" module is the best
+    place to start before diving into the reference documentation.
 
 extra-doc-files: CHANGELOG.md
 
@@ -28,6 +30,11 @@ library
     hs-source-dirs:   src
 
     exposed-modules:
+        Fuzzy
+        Fuzzy.Control
+        Fuzzy.Relations
+        Fuzzy.Sets
+        Fuzzy.Tutorial
         FuzzySet
         Fuzzy.Sets.LSet
         Fuzzy.Sets.MembershipFunctions
@@ -35,12 +42,16 @@ library
         Fuzzy.Sets.FuzzyCardinality
         Fuzzy.Sets.Properties
         Fuzzy.Control.Defuzzification
+        Fuzzy.Control.Fuzzification
+        Fuzzy.Control.InferenceRules
         Fuzzy.Relations.LRelation
         Fuzzy.Relations.MembershipFunctions
         Fuzzy.Relations.RelationComposition
         Fuzzy.Relations.Properties
         Lattices.ResiduatedLattice
+        Lattices
         Lattices.UnitInterval
+        Lattices.UnitIntervalStructures
         Lattices.UnitIntervalStructures.Godel
         Lattices.UnitIntervalStructures.Lukasiewicz
         Lattices.UnitIntervalStructures.Product

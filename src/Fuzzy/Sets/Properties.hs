@@ -1,3 +1,8 @@
+-- | Predicates and graded property measures for fuzzy sets.
+--
+-- This module provides both crisp Boolean checks such as emptiness and
+-- singletonhood, and graded comparisons such as subsethood and equality in a
+-- residuated lattice.
 module Fuzzy.Sets.Properties (
     -- * Standard predicates 
     isEmpty,

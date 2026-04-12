@@ -1,0 +1,498 @@
+-- | A guided introduction to the library.
+--
+-- This module is written as a tutorial rather than as an API reference. The
+-- goal is to explain the main ideas behind the library and to show how the
+-- same fuzzy set or relation behaves differently when you choose a different
+-- truth-value structure.
+--
+-- A fuzzy set is a function that assigns each element of some universe a truth
+-- degree. That degree is /not/ a probability. A value such as @0.75@ means
+-- "belongs to degree 0.75" or "is true to degree 0.75" in the chosen lattice.
+--
+-- == Suggested imports
+--
+-- A practical starting import list is:
+--
+-- @
+-- import FuzzySet
+-- import Fuzzy.Sets
+-- import Fuzzy.Relations
+-- import Fuzzy.Control.Defuzzification
+-- import Lattices.ResiduatedLattice
+-- import Lattices.UnitIntervalStructures.Godel
+-- import Lattices.UnitIntervalStructures.Lukasiewicz
+-- import Lattices.UnitIntervalStructures.Product
+-- @
+--
+-- == The first big idea: the lattice matters
+--
+-- All three provided unit-interval structures use the same ordering, join, and
+-- meet, so unions and intersections are the same. The real difference appears
+-- when you use operations such as 'tnorm', implication ('-->'), negation, and
+-- repeated conjunction with 'power'.
+--
+-- >>> (0.75 `tnorm` 0.5) :: UILukasiewicz
+-- 0.25
+-- >>> (0.75 `tnorm` 0.5) :: UIGodel
+-- 0.5
+-- >>> (0.75 `tnorm` 0.5) :: UIProduct
+-- 0.375
+--
+-- >>> (0.75 --> 0.5) :: UILukasiewicz
+-- 0.75
+-- >>> (0.75 --> 0.5) :: UIGodel
+-- 0.5
+-- >>> (0.75 --> 0.5) :: UIProduct
+-- 0.6666666666666666
+--
+-- >>> negation (0.75 :: UILukasiewicz)
+-- 0.25
+-- >>> negation (0.75 :: UIGodel)
+-- 0.0
+-- >>> negation (0.75 :: UIProduct)
+-- 0.0
+--
+-- Intuitively:
+--
+-- * Lukasiewicz is /compensatory/: moderately true statements can still combine
+--   to a low result, and negation behaves like @1 - x@.
+-- * Godel is /minimum-based/: conjunction keeps the weaker of the two values.
+-- * Product is /multiplicative/: repeated evidence decays smoothly by repeated
+--   multiplication.
+--
+-- If a result surprises you, the lattice is often the reason.
+--
+-- == Building fuzzy sets
+--
+-- The simplest constructor is 'fromList'. It stores an explicit universe and a
+-- membership value for each listed element:
+--
+-- >>> let practical = fromList [("bike", 0.25), ("bus", 0.75), ("walk", 0.5)] :: LSet String UILukasiewicz
+-- >>> toList practical
+-- [("bike",0.25),("bus",0.75),("walk",0.5)]
+-- >>> member practical "bus"
+-- 0.75
+--
+-- If your set is naturally given by a curve, use 'fromFunction'. You provide
+-- both the membership function and the explicit universe on which you want the
+-- set to be represented:
+--
+-- >>> let warm = fromFunction (triangular 18 22 26) [18, 20, 22, 24, 26] :: LSet Double UILukasiewicz
+-- >>> toList warm
+-- [(18.0,0.0),(20.0,0.5),(22.0,1.0),(24.0,0.5),(26.0,0.0)]
+--
+-- The explicit universe is important. Operations such as 'toList', 'alphaCut',
+-- cardinality measures, and defuzzification work over the stored universe.
+--
+-- == Set operations and what they mean
+--
+-- Union and intersection use the lattice join and meet pointwise:
+--
+-- >>> let cheap = fromList [("bike", 1.0), ("bus", 0.5), ("walk", 0.75)] :: LSet String UILukasiewicz
+-- >>> toList (union practical cheap)
+-- [("bike",1.0),("bus",0.75),("walk",0.75)]
+-- >>> toList (intersection practical cheap)
+-- [("bike",0.25),("bus",0.5),("walk",0.5)]
+--
+-- Alpha-cuts turn a fuzzy set into an ordinary set by keeping the elements
+-- whose membership is at least a chosen threshold:
+--
+-- >>> alphaCut 0.5 practical
+-- ["bus","walk"]
+--
+-- Sometimes minimum and maximum are not the operations you want. If you want
+-- the lattice's conjunction and implication, use 'setTnorm' (sometimes called weak conjunction) and
+-- 'setResiduum':
+--
+-- >>> toList (setTnorm practical cheap)
+-- [("bike",0.25),("bus",0.25),("walk",0.25)]
+-- >>> toList (setResiduum practical cheap)
+-- [("bike",1.0),("bus",0.75),("walk",1.0)]
+--
+-- Those operations become especially interesting when you change the lattice.
+-- The same membership values can lead to very different complements and
+-- conjunctions:
+--
+-- >>> let sampleL = fromList [("a", 0.75), ("b", 0.5)] :: LSet String UILukasiewicz
+-- >>> let sampleG = fromList [("a", 0.75), ("b", 0.5)] :: LSet String UIGodel
+-- >>> let sampleP = fromList [("a", 0.75), ("b", 0.5)] :: LSet String UIProduct
+-- >>> toList (complement sampleL)
+-- [("a",0.25),("b",0.5)]
+-- >>> toList (complement sampleG)
+-- [("a",0.0),("b",0.0)]
+-- >>> toList (complement sampleP)
+-- [("a",0.0),("b",0.0)]
+--
+-- >>> toList (setTnorm sampleL sampleL)
+-- [("a",0.5),("b",0.0)]
+-- >>> toList (setTnorm sampleG sampleG)
+-- [("a",0.75),("b",0.5)]
+-- >>> toList (setTnorm sampleP sampleP)
+-- [("a",0.5625),("b",0.25)]
+--
+-- This is a good mental model for the whole library: the data stays the same,
+-- but the algebra changes the meaning of "and", "if ... then", and "not".
+--
+-- == Properties can be fuzzy too
+--
+-- Many familiar set-theoretic questions have graded versions. Instead of
+-- asking only whether one set is a subset of another, we can ask /to what
+-- degree/ it is a subset:
+--
+-- >>> let beginners = fromList [("alice", 1.0), ("bob", 0.75), ("carol", 0.5)] :: LSet String UILukasiewicz
+-- >>> let enrolled = fromList [("alice", 1.0), ("bob", 1.0), ("carol", 0.75)] :: LSet String UILukasiewicz
+-- >>> gradedSubsethood beginners enrolled
+-- 1.0
+-- >>> gradedEquality beginners enrolled
+-- 0.75
+--
+-- A result of @1.0@ means the property holds completely. 
+-- Anything smaller means there are elements that do not satisfy the condition fully.
+--
+-- == Cardinality and defuzzification
+--
+-- The simplest numeric summary of a fuzzy set is the sigma count:
+--
+-- >>> sigmaCount warm
+-- 2.0
+-- >>> normalizedSigmaCount warm
+-- 0.4
+--
+-- If you want a fuzzy set of /possible counts/, fuzzy cardinalities give a
+-- richer picture:
+--
+-- >>> toList (fgCount warm :: LSet Int UILukasiewicz)
+-- [(0,1.0),(1,1.0),(2,0.5),(3,0.5),(4,0.0),(5,0.0)]
+--
+-- And when your universe is numeric, you can turn a fuzzy set back into a
+-- single representative value:
+--
+-- >>> centerOfGravity warm
+-- 22.0
+--
+-- == Fuzzy relations
+--
+-- A fuzzy relation is just a fuzzy set on ordered pairs. You can build one
+-- from explicit pair memberships:
+--
+-- >>> let links = fromList [((1, 2), 0.9), ((1, 3), 0.4), ((2, 4), 0.6), ((3, 4), 0.8)] :: LRelation Int UIGodel
+-- >>> member links (1, 2)
+-- 0.9
+--
+-- Or from a function. For example, 'isCloseTo' builds a graded similarity
+-- relation on real numbers:
+--
+-- >>> let close = fromFunction isCloseTo [0.0, 0.5, 1.25] :: LRelation Double UILukasiewicz
+-- >>> member close (0.0, 0.5)
+-- 0.5
+-- >>> member close (0.0, 1.25)
+-- 0.0
+--
+-- Relations also have graded properties:
+--
+-- >>> ref close
+-- 1.0
+-- >>> sym close
+-- 1.0
+--
+-- A less symmetric relation can still be perfectly reflexive and transitive:
+--
+-- >>> let atMost = fromFunction (\(x, y) -> if x <= y then 1 else 0.25) [1, 2, 3] :: LRelation Int UILukasiewicz
+-- >>> ref atMost
+-- 1.0
+-- >>> sym atMost
+-- 0.25
+-- >>> tra atMost
+-- 1.0
+--
+-- == Relation composition
+--
+-- Composition operators answer different questions about how two relations fit
+-- together. Using the Godel lattice makes the path interpretation especially
+-- easy to read:
+--
+-- >>> member (circlet links links) (1, 4)
+-- 0.6
+-- >>> member (subproduct links links) (1, 4)
+-- 0.6
+-- >>> member (superproduct links links) (1, 4)
+-- 0.4
+-- >>> member (square links links) (1, 4)
+-- 0.4
+--
+-- Roughly speaking:
+--
+-- * 'circlet' asks whether there is a good intermediate step.
+-- * 'subproduct' asks whether relation membership in the first relation
+--   implies relation membership in the second.
+-- * 'superproduct' reverses that implication.
+-- * 'square' measures how closely the two relation profiles agree.
+--
+-- == Where to go next
+--
+-- * "Fuzzy.Sets" groups the main set constructors, operations, and property
+--   checks.
+-- * "Fuzzy.Relations" collects relation constructors, compositions, and
+--   relation properties.
+-- * "Lattices" explains the algebraic layer that controls conjunction,
+--   implication, and negation.
+-- * "Fuzzy.Control.Defuzzification" contains the numeric read-out functions
+--   for fuzzy sets over numeric universes.
+--
+--
+-- == A larger example: fuzzy control (regulator)
+--
+-- A common use of fuzzy sets is in /control systems/. We describe a system
+-- using linguistic rules such as:
+--
+-- * "If temperature is cold, then increase heating strongly"
+-- * "If temperature is warm, then do nothing"
+-- * "If temperature is hot, then decrease heating"
+--
+-- This library provides a structured interface for this pipeline:
+--
+-- * 'LinguisticVariable' for inputs
+-- * 'Rule' and 'RuleBase' for inference
+-- * 'infer' for rule evaluation and aggregation
+-- * defuzzification functions for crisp output
+--
+-- === Step 1: Define linguistic variables
+--
+-- >>> import Fuzzy.Control.Fuzzification
+-- >>> import Fuzzy.Control.InferenceRules
+--
+-- >>> let tempU = [0,5..40]
+-- >>> let cold  = fromFunction (triangular 0 0 20) tempU :: LSet Double UILukasiewicz
+-- >>> let warm  = fromFunction (triangular 15 22 30) tempU :: LSet Double UILukasiewicz
+-- >>> let hot   = fromFunction (triangular 25 40 40) tempU :: LSet Double UILukasiewicz
+--
+-- >>> let temperature =
+-- ...       mkUnsafeLinguisticVariable "temperature"
+-- ...         [ ("cold", cold)
+-- ...         , ("warm", warm)
+-- ...         , ("hot",  hot)
+-- ...         ]
+--
+-- Output variable:
+--
+-- >>> let outU = [-10,-5..10]
+-- >>> let decrease = fromFunction (triangular (-10) (-10) 0) outU :: LSet Double UILukasiewicz
+-- >>> let stable   = fromFunction (triangular (-2) 0 2) outU   :: LSet Double UILukasiewicz
+-- >>> let increase = fromFunction (triangular 0 10 10) outU    :: LSet Double UILukasiewicz
+--
+-- === Step 2: Define rules
+--
+-- Each rule directly connects an input fuzzy set to an output fuzzy set:
+--
+-- >>> let rules =
+-- ...       [ Rule cold  increase
+-- ...       , Rule warm  stable
+-- ...       , Rule hot   decrease
+-- ...       ]
+--
+-- === Step 3: Inference
+--
+-- Given a crisp input, we evaluate all rules and aggregate their outputs:
+--
+-- >>> let temp = 10
+-- >>> let result = infer rules temp
+--
+-- Internally, this performs:
+--
+-- * membership lookup in antecedents
+-- * scaling of consequents
+-- * aggregation via union
+--
+-- === Step 4: Defuzzification
+--
+-- Finally, extract a crisp control signal:
+--
+-- >>> centerOfGravity result
+--
+-- This yields the final actuator value (e.g. heating power).
+--
+-- === Full pipeline summary
+--
+-- > crisp input
+-- >   → fuzzification (implicit via 'member')
+-- >   → rule evaluation ('evalRule')
+-- >   → aggregation ('aggregate')
+-- >   → defuzzification
+--
+-- This structure is known as a /Mamdani fuzzy controller/.
+--
+-- === Notes
+--
+-- * You can inspect intermediate results using 'toList'
+-- * Changing the lattice affects rule interaction
+-- * The universes of all sets must match within each variable
+--
+--
+-- == Similarity relations and reasoning
+--
+-- A very important use of fuzzy relations is to represent /similarity/.
+-- Instead of saying whether two elements are equal, we assign a degree
+-- expressing how similar they are.
+--
+-- Consider three items:
+--
+-- >>> let xs = ["A","B","C"]
+--
+-- Suppose we know:
+--
+-- * A is somewhat similar to B
+-- * B is quite similar to C
+-- * but we do not explicitly state how similar A is to C
+--
+-- We can model this as a fuzzy relation:
+--
+-- >>> let sim0 =
+-- ...       fromList [ (("A","A"),1.0), (("B","B"),1.0), (("C","C"),1.0)
+-- ...                , (("A","B"),0.6), (("B","A"),0.6)
+-- ...                , (("B","C"),0.7), (("C","B"),0.7)
+-- ...                ]
+-- ...       :: LRelation String UIGodel
+--
+-- Missing pairs implicitly have membership 0.
+--
+-- We can now ask:
+--
+-- >>> member sim0 ("A","C")
+-- 0.0
+--
+-- There is no direct similarity between A and C.
+--
+-- === Propagating similarity
+--
+-- However, similarity can /propagate through intermediate elements/.
+--
+-- If A is similar to B, and B is similar to C,
+-- then A should be somewhat similar to C.
+--
+-- This is exactly what relational composition computes:
+--
+-- >>> let sim1 = union sim0 (circlet sim0 sim0)
+-- >>> member sim1 ("A","C")
+-- 0.6
+--
+-- The value 0.6 comes from:
+--
+-- * A ~ B = 0.6
+-- * B ~ C = 0.7
+-- * combined using the Godel t-norm (minimum)
+--
+-- So:
+--
+-- > min(0.6, 0.7) = 0.6
+--
+-- === Iterating the process
+--
+-- We can repeat this process to strengthen indirect similarities:
+--
+-- >>> let sim2 = union sim1 (circlet sim1 sim1)
+--
+-- This gradually builds a /transitive closure/ of the similarity relation.
+--
+-- === Interpretation
+--
+-- This process can be understood as:
+--
+-- * discovering hidden relationships
+-- * propagating similarity through a network
+-- * completing partial knowledge
+--
+-- === Connection to matrices
+--
+-- When the universe is finite, the relation can be viewed as a matrix:
+--
+-- > [1.0  0.6  0.0]
+-- > [0.6  1.0  0.7]
+-- > [0.0  0.7  1.0]
+--
+-- Composition behaves like matrix multiplication where:
+--
+-- * multiplication is replaced by 'tnorm'
+-- * addition is replaced by 'sup'
+--
+-- === Applications
+--
+-- This idea is widely used in:
+--
+-- * recommendation systems ("users similar to users")
+-- * clustering (grouping similar elements)
+-- * approximate matching
+--
+--
+-- == Comparing relations: similarity of matrices
+--
+-- Fuzzy relations can also be compared with each other. Instead of asking
+-- whether two relations are equal, we can ask:
+--
+-- > to what degree are they similar?
+--
+-- This is especially natural when we view relations as matrices.
+--
+-- === Pointwise similarity
+--
+-- Given two relations A and B on the same universe, we compare them
+-- element-wise using fuzzy equivalence:
+--
+-- > A ↔ B
+--
+-- This produces a new fuzzy relation measuring agreement at each position.
+--
+-- === Global similarity
+--
+-- To obtain a single number, we aggregate all local similarities using
+-- the sigma count:
+--
+-- > sim(A,B) = Σ (A ↔ B)
+--
+-- === Example
+--
+-- >>> let xs = [1,2]
+-- >>> let a = fromList [((1,1),1.0),((1,2),0.5)
+-- ...                  ,((2,1),0.5),((2,2),1.0)
+-- ...                  ] :: LRelation Int UILukasiewicz
+--
+-- >>> let b = fromList [((1,1),1.0),((1,2),0.25)
+-- ...                  ,((2,1),0.25),((2,2),1.0)
+-- ...                  ] :: LRelation Int UILukasiewicz
+--
+-- Compute pointwise similarity:
+--
+-- >>> let localSim = setEquivalence a b
+-- >>> toList localSim
+-- [((1,1),1.0),((1,2),0.75),((2,1),0.75),((2,2),1.0)]
+--
+-- Aggregate into a single value:
+--
+-- >>> sigmaCount localSim
+-- 3.5
+--
+-- For normalization:
+--
+-- >>> normalizedSigmaCount localSim
+-- 0.875
+--
+-- === Interpretation
+--
+-- * A value of 1.0 means the relations are identical
+-- * Values close to 1 indicate strong similarity
+-- * Lower values highlight disagreement
+--
+-- === Matrix perspective
+--
+-- If we write the relations as matrices:
+--
+-- A =
+-- > [1.0  0.5]
+-- > [0.5  1.0]
+--
+-- B =
+-- > [1.0  0.25]
+-- > [0.25 1.0]
+--
+-- then similarity compares them entry-by-entry and sums the agreement.
+
+module Fuzzy.Tutorial () where

@@ -1,3 +1,4 @@
+-- | Defuzzification operators for fuzzy sets over numeric universes.
 module Fuzzy.Control.Defuzzification where
 
 import Fuzzy.Sets.LSet (LSet, toList)
@@ -8,30 +9,32 @@ import Data.List (maximumBy)
 import Data.Ord (comparing)
 
 -- | Defuzzify a fuzzy set using the center of gravity (centroid) method.
--- 
+--
 -- Returns 0 for an empty universe.
 centerOfGravity ::  ResiduatedLattice l => LSet Double l -> Double
 centerOfGravity  = centerOfGravityMod id
 
+
 -- | Defuzzify with a membership modifier function 'c'.
 --
--- The modifier is applied to each membership value before computing the weighted mean.
+-- The modifier is applied to each membership value before computing COG.
 -- Returns 0 when the modified sigma count is 0.
 centerOfGravityMod :: ResiduatedLattice l => (l -> l) -> LSet Double l -> Double
 centerOfGravityMod c set = if card == 0 then 0 else numer / card
-    where 
+    where
         pairs = toList set
         card = sigmaCountMod c set
-        numer = sum [x * realToFrac mem | (x, mem) <- pairs]
+        numer = sum [u * realToFrac (c mem) | (u, mem) <- pairs]
 
 -- | Defuzzify by taking the midpoint of the maximum interval.
 --
--- For a non-empty set returns (max + min) / 2 based on the universe support.
+-- For a non-empty set returns @(max + min) / 2@ based on the universe support.
 centerOfMaxima :: ResiduatedLattice l => LSet Double l -> Double
-centerOfMaxima set = (sup + inf) / 2 
-    where 
+centerOfMaxima set = (sup + inf) / 2
+    where
         sup = maximum $ universe set
         inf = minimum $ universe set
+
 
 -- | Mean of maxima with a modifier function.
 --
@@ -39,9 +42,10 @@ centerOfMaxima set = (sup + inf) / 2
 -- Returns 0 for empty universes.
 meanOfMaximaMod :: ResiduatedLattice l => (l -> l) -> LSet Double l -> Double
 meanOfMaximaMod c set = if sizeUniverse == 0 then 0 else card / sizeUniverse
-    where 
+    where
         card = sigmaCountMod c set
         sizeUniverse = fromIntegral $ universeCardinality set
+
 
 -- | Return the universe element with maximal membership degree.
 --
