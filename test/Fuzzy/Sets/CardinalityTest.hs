@@ -9,6 +9,7 @@ import Fuzzy.Sets.Cardinality
 import Lattices.UnitIntervalStructures.Lukasiewicz
 import Lattices.ResiduatedLattice
 import Utils.Utils
+import FuzzySet
 
 
 cardinalityTests :: TestTree

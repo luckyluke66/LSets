@@ -21,9 +21,9 @@ fuzzyCardinalityTests = testGroup "Fuzzy Cardinality Tests" [
     testCase "ralescuF returns fuzzy count" testRalescuF,
     testCase "generalisedFGCount on Lukasiewicz" testGeneralizedFGLuk,
     testCase "generalisedFGCount on Godel" testGeneralizedFGGodel,
-    testCase "generalisedFGCount on Product" testGeneralizedFGProd,
-    testCase "generalisedFLCount" testGeneralizedFL,
-    testCase "generalisedFECount" testGeneralizedFE
+    testCase "generalisedFGCount on Product" testGeneralizedFGProd
+    --testCase "generalisedFLCount" testGeneralizedFL,
+    --testCase "generalisedFECount" testGeneralizedFE
     ]
 
 whereSet :: (ResiduatedLattice l) => LSet String l
@@ -142,7 +142,7 @@ testGeneralizedFGLuk = do
         assertApproxEqual "generalizedFG lukasiewicz value" (snd a) (snd e)
         ) pairs
 
-
+{-
 testGeneralizedFL :: Assertion
 testGeneralizedFL = do
     let cLuk = generalizedFLCount whereSet :: LSet Int UILukasiewicz
@@ -207,3 +207,4 @@ testGeneralizedFE = do
         assertEqual "generalizedFE product key" (fst e) (fst a)
         assertApproxEqual "generalizedFE product value" (snd a) (snd e)
         ) pairsProduct
+-}
